@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Send Location and Tracking Number</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!--Bootstrap for form-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
+  <!--leaflet-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
+  <!--Location Plugin-->
+  <script src='https://cdn.jsdelivr.net/leaflet.locatecontrol/0.49.0/L.Control.Locate.min.js'></script>
+  <link href='https://cdn.jsdelivr.net/leaflet.locatecontrol/0.49.0/L.Control.Locate.css' rel='stylesheet' />
+  <!--Tabletop and GeoJson-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.4.3/tabletop.min.js"></script>
+  <script src="js/geojson.js"></script>
+  <!--Fonts-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+  <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700,900' rel='stylesheet' type='text/css'>
+
+  <script   src="https://code.jquery.com/jquery-2.2.3.min.js"   integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="   crossorigin="anonymous"></script>
+  <style>
+    *{font-family: 'Source Sans Pro', sans-serif;}
+    .map {height:70%}
+    #map {position:relative;height:500px;}
+    .leaflet-popup-content {font-size: medium;}
+    .form-group{width:200px;margin-bottom:0;}
+    .form-control{resize:none;}
+    .text-muted{font-size:smaller;}
+    hr {margin: 10px 0;}
+  </style>
+</head>
+
+<body>
+  <div class="container text-center">
+    <h3>Send Location and Tracking Number</h3>
+  </div>
+  <div class="map">
+    <div id="map"></div>
+  </div>
+  <div class="container">
+    <!--<h4>Send Location.</h4>-->
+  </div>
+  <script>
+    var map = L.map('map'); //Initialize the map
+
+    var formId = '1FAIpQLSc2DAI04PMD21YG8kQv3DBQQOgMg6YZczPDwk6FCpgFPR49vw';
+    var formLat = '1139993701';
+    var formLng = '1753243151';
+    var formText = '321860203';
+    var formTem = '203098882';
+    var gsheet = '15zecq9a67GIEanDbQfztyq0Gd1nqwZ0_APuOxMzzScM';
+    var des = "";
+    var tem = "";
+    //Add a basemap
+    var OpenStreetMap_Mapnik = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    	maxZoom: 19,
+    	attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    //Add Location Options - override the plugin default popup and circle
+    var locOptions = {
+      drawCircle: false,
+      showPopup: false,
+      follow:true,
+    };
+
+    //Add Location
+    var loc = L.control.locate(locOptions).addTo(map);
+
+    //Endable Location at page load and do things once the location is found
+    loc.start();
+
+    var marker, circle, lat, lng; //create variables used throughout the map
+
+    function collectData(e) {
+      //console.log(e);
+      lat = e.latlng.lat;
+      lng = e.latlng.lng;
+
+      var form = '<div id="formdiv"><form role="form" id="projectform"><div class="form-group"><div class="form-group"><label for="description" class="requiredField">Tracking Number</label><br><input type="text" id="descrip" name="descrip"><br><label for="Tem">Temperature</label><br><input type="text" id="Temname" name="Temname"></div><em class="text-muted">Click submit to add Tracking Number.</em><div id="formHelp"></div><hr /><button type="submit" id="submit" class="btn btn-default btn-sm">Submit</button></form></div>';
+
+      if (e.accuracy) {
+        var radius = (e.accuracy / 2) * 3.28084;
+        circle = L.circle(e.latlng, radius).addTo(map);
+      }
+      marker = L.marker(e.latlng).addTo(map)
+      .bindPopup(form, {maxWidth:400});
+      
+      //if you try and open the popup right away the location may not be ready, eventhough it's firing after locationfound
+      setTimeout(function() {
+        marker.openPopup();
+        loc.stop();
+      }, 100);
+
+      marker.on('popupopen', function() {
+        $('#projectform').submit(function(event) {
+            event.preventDefault();
+            var descrip = $('#descrip').val();
+            var Temperature = $('#Temname').val();
+            //console.log(descrip);
+            if (descrip) {
+              if(des == "" && tem == ""){
+                des = descrip;
+                tem = Temperature;
+              }
+              
+              
+              //console.log(descrip);
+              //$('#formdiv').html('<iframe src="https://docs.google.com/forms/d/e/' + formId + '/viewform?usp=pp_url&entry.' + formLat + '=' + lat + '&entry.' + formLng + '=' + lng + '&entry.'+ formText + '=' + descrip + '&submit=Submit" seamless scrolling="no" style="overflow:hidden;height:375px;border:lightgray solid thin;"></iframe>');
+              //var UrlSend = 'https://docs.google.com/forms/d/e/' + formId +'/viewform?usp=pp_url&entry.' + formLat + '=' + lat + '&entry.' + formLng + '=' + lng + '&entry.'+ formText + '=' + descrip;
+              $('#formdiv').html('<div id="formdivSend"><input type="button" onclick= "UrlSendLoc()" value="Upload Image"/></div>');
+              //$('#formdiv').html('<iframe src="https://docs.google.com/forms/d/e/' + formId + '/formResponse?entry.' + formLat + '=' + lat + '&entry.' + formLng + '=' + lng + '&entry.'+ formText + '=' + descrip + '&submit=Submit" seamless scrolling="no" style="overflow:hidden;height:375px;border:lightgray solid thin;"></iframe>');
+            } else {
+              $('#formHelp').html('<span style="color:red;">Please enter a Tracking Number.</span>')
+            }
+          });
+      });
+      if (marker) {
+        marker.on('popupclose', function() {
+          map.removeLayer(marker);
+          if (map.hasLayer(circle)) {
+            map.removeLayer(circle);
+          }
+        });
+      }
+    }
+
+    function UrlSendLoc(){
+      var UrlSend = 'https://docs.google.com/forms/d/e/' + formId +'/viewform?usp=pp_url&entry.' + formLat + '=' + lat + '&entry.' + formLng + '=' + lng + '&entry.'+ formText + '=' + des+'&entry.'+formTem+'='+tem;
+      var Url = encodeURI(UrlSend);
+      window.open(Url);
+    }
+
+
+    map.on('locationfound', function(e) {
+      collectData(e);
+    });
+    
+  setTimeout(function() {
+    if(lat) {
+      return false;
+    }else{
+      console.log('no loc');
+      loc.stop();
+      map.setView([39,-82], 10);
+      alert('No location found')
+    }
+    }, 6000);
+
+    map.on('click', function(e) {
+      collectData(e);
+    });
+
+/*    map.on('stopfollowing', function() {
+      if (marker) { 
+        marker.closePopup();
+      }
+    });*/
+
+    //Add form response points
+    //Add an empty geojson layer for the google sheet points and create the popup
+    var gps = new L.geoJson(null, {
+      onEachFeature: function(feature, layer) {
+        layer.bindPopup(feature.properties.Description)
+      }
+    });
+
+    //Grab the google sheet data using tabletop - published to the web not just shared - and use geojson.min.js to convert into proper geojson format
+    var tabletop = Tabletop.init( {
+      key: gsheet,
+      simpleSheet: true,
+      parseNumbers: true,
+      callback: function(data, tabletop) {
+        var gpsData = GeoJSON.parse(data, {Point: ['Latitude', 'Longitude']});
+
+        //add that data to the geojson layer created earlier
+        gps.addData(gpsData);
+        gps.addTo(map);
+      },
+    });
+
+  </script>
+</body>
+
+</html>
